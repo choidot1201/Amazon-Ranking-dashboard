@@ -154,6 +154,7 @@ let brandTimeSeries = { perBrand: {}, dates: [] }; // brand -> date -> region ->
 let selectedBrands = [];  // brand names shown on the trend chart (max 8)
 let selectedBrandsInitialized = false;
 let chartRegionFilter = 'ALL';
+let chartStartDate = null; // ISO date string; defaults to the earliest day with data
 let brandColorSlots = {}; // brand name -> categorical palette slot (stable across renders)
 let lineChartInstance = null;
 let brandTableViewOn = false;
@@ -181,6 +182,11 @@ async function loadData() {
       selectedBrands = buildBrandSnapshot().slice(0, 6).map(r => r.name);
       selectedBrands.forEach(ensureColorSlot);
       selectedBrandsInitialized = true;
+    }
+    // keep the chart's start date anchored to the first day with data unless
+    // the user already picked one that's still within the (possibly shifted) range
+    if (!chartStartDate || !brandTimeSeries.dates.includes(chartStartDate)) {
+      chartStartDate = brandTimeSeries.dates[0] || null;
     }
 
     document.getElementById('sheetLink').href = SHEET_EDIT_URL;
@@ -625,10 +631,28 @@ function toggleBrandSelection(name) {
   renderBrandChart();
 }
 
+function visibleChartDates() {
+  if (!chartStartDate) return brandTimeSeries.dates;
+  return brandTimeSeries.dates.filter(d => d >= chartStartDate);
+}
+
+function renderStartDateSelect() {
+  const select = document.getElementById('chartStartDateSelect');
+  const dates = brandTimeSeries.dates;
+  const current = select.value;
+  select.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  // preserve the user's choice across re-renders when it's still a valid option;
+  // otherwise fall back to the tracked chartStartDate (first day with data by default)
+  select.value = dates.includes(current) ? current : (chartStartDate || dates[0] || '');
+  chartStartDate = select.value || null;
+}
+
 function renderBrandChart() {
   const canvasWrap = document.querySelector('#panelBrands .chart-wrap');
   const tableWrap = document.getElementById('brandTableWrap');
   const toggleBtn = document.getElementById('chartTableToggle');
+
+  renderStartDateSelect();
 
   if (brandTableViewOn) {
     canvasWrap.classList.add('hidden');
@@ -641,7 +665,7 @@ function renderBrandChart() {
   tableWrap.classList.add('hidden');
   toggleBtn.textContent = 'View as table';
 
-  const dates = brandTimeSeries.dates;
+  const dates = visibleChartDates();
   const labels = dates.map(formatDateShort);
   const palette = currentPalette();
   const datasets = selectedBrands.map(name => {
@@ -703,7 +727,7 @@ function renderBrandChart() {
 function renderBrandDataTable() {
   const head = document.getElementById('brandDataTableHead');
   const body = document.getElementById('brandDataTableBody');
-  const dates = brandTimeSeries.dates;
+  const dates = visibleChartDates();
   head.innerHTML = `<tr><th>Date</th>${selectedBrands.map(n => `<th>${escapeHtml(n)}</th>`).join('')}</tr>`;
   if (!dates.length || !selectedBrands.length) {
     body.innerHTML = `<tr><td class="empty-note">Select a brand to display.</td></tr>`;
@@ -867,6 +891,7 @@ document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalBackdrop').addEventListener('click', closeModal);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 document.getElementById('chartRegionSelect').addEventListener('change', e => { chartRegionFilter = e.target.value; renderBrandChart(); });
+document.getElementById('chartStartDateSelect').addEventListener('change', e => { chartStartDate = e.target.value; renderBrandChart(); });
 document.getElementById('chartTableToggle').addEventListener('click', () => { brandTableViewOn = !brandTableViewOn; renderBrandChart(); });
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
