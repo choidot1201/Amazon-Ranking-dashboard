@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jun's Amazon ranking tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img class="brand-mark" src="assets/avatar.webp" alt="Jun">
+      <div class="brand-text">
+        <h1>Jun's Amazon ranking tracker</h1>
+        <p>Amazon Beauty Top 100 rankings across 5 regions · Updated daily</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="updatedAt" class="updated-pill">Loading…</span>
+      <a id="sheetLink" class="ghost-btn" href="#" target="_blank" rel="noopener">Source Sheet</a>
+      <button id="refreshBtn" class="primary-btn">
+        <svg id="refreshIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="regionbar">
+  <div class="regionbar-inner" id="regionTabs">
+    <!-- region tab buttons injected -->
+  </div>
+</nav>
+
+<main class="content">
+
+  <section id="statRow" class="stat-row"></section>
+
+  <section class="controls">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="searchInput" type="text" placeholder="Search product or brand…">
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="kbeautyToggle">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">🇰🇷 K-Beauty only</span>
+    </label>
+    <select id="sortSelect" class="sort-select">
+      <option value="rank_asc">Rank</option>
+      <option value="delta_desc">Biggest gainers</option>
+      <option value="delta_asc">Biggest drops</option>
+      <option value="rating_desc">Highest rated</option>
+      <option value="reviews_desc">Most reviews</option>
+      <option value="price_asc">Price: low to high</option>
+      <option value="price_desc">Price: high to low</option>
+    </select>
+  </section>
+
+  <section id="panelRegion" class="panel">
+    <div class="table-card">
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th class="col-rank">Rank</th>
+            <th class="col-brand">Brand(s)</th>
+            <th class="col-product">Product</th>
+            <th class="col-rating">Rating</th>
+            <th class="col-price">Price</th>
+            <th class="col-delta">vs Yesterday</th>
+          </tr>
+        </thead>
+        <tbody id="regionTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="panelCross" class="panel hidden">
+    <div class="table-card">
+      <table class="rank-table cross-table">
+        <thead>
+          <tr>
+            <th class="col-rank">Avg Rank</th>
+            <th class="col-product">Product</th>
+            <th class="col-regions">🇺🇸</th>
+            <th class="col-regions">🇬🇧</th>
+            <th class="col-regions">🇩🇪</th>
+            <th class="col-regions">🇫🇷</th>
+            <th class="col-regions">🇪🇸</th>
+            <th class="col-count">Regions</th>
+          </tr>
+        </thead>
+        <tbody id="crossTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="panelMovers" class="panel hidden">
+    <div class="movers-grid">
+      <div class="movers-col">
+        <h3><span class="movers-emoji">🆕</span>New Entries</h3>
+        <div id="moversNew" class="movers-list"></div>
+      </div>
+      <div class="movers-col">
+        <h3><span class="movers-emoji">🚀</span>Top Gainers</h3>
+        <div id="moversUp" class="movers-list"></div>
+      </div>
+      <div class="movers-col">
+        <h3><span class="movers-emoji">📉</span>Top Drops</h3>
+        <div id="moversDown" class="movers-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panelBrands" class="panel hidden">
+    <div class="table-card brand-snapshot-card">
+      <div class="panel-subhead">
+        <h3>Brand Presence in Top 100</h3>
+        <span class="panel-subhead-note">As of today</span>
+      </div>
+      <table class="rank-table brand-matrix-table">
+        <thead>
+          <tr>
+            <th class="col-brand-name">Brand</th>
+            <th class="col-regions">🇺🇸</th>
+            <th class="col-regions">🇬🇧</th>
+            <th class="col-regions">🇩🇪</th>
+            <th class="col-regions">🇫🇷</th>
+            <th class="col-regions">🇪🇸</th>
+            <th class="col-count">Total</th>
+          </tr>
+        </thead>
+        <tbody id="brandMatrixBody"></tbody>
+      </table>
+    </div>
+
+    <div class="chart-card">
+      <div class="panel-subhead">
+        <h3>Brand Entry Trend</h3>
+        <div class="chart-controls">
+          <select id="chartRegionSelect" class="sort-select">
+            <option value="ALL">All Regions Combined</option>
+            <option value="US">🇺🇸 US</option>
+            <option value="UK">🇬🇧 UK</option>
+            <option value="DE">🇩🇪 Germany</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="ES">🇪🇸 Spain</option>
+          </select>
+          <button id="chartTableToggle" class="ghost-btn">View as table</button>
+        </div>
+      </div>
+      <div id="brandChips" class="brand-chip-row"></div>
+      <div class="chart-wrap">
+        <canvas id="brandLineChart"></canvas>
+      </div>
+      <div id="brandTableWrap" class="table-scroll hidden">
+        <table class="rank-table brand-datatable">
+          <thead id="brandDataTableHead"></thead>
+          <tbody id="brandDataTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div id="loadingState" class="state-block">
+    <div class="spinner"></div>
+    <p>Loading data from Google Sheets…</p>
+  </div>
+
+  <div id="errorState" class="state-block hidden">
+    <p class="error-title">⚠️ Couldn't load data</p>
+    <p id="errorDetail" class="error-detail"></p>
+    <button class="primary-btn" onclick="loadData()">Try again</button>
+  </div>
+
+</main>
+
+<div id="detailModal" class="modal hidden">
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-card">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>Based on Amazon Best Sellers · Beauty & Personal Care · Mirrors a Google Sheet refreshed daily by the data pipeline.</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
